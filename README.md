@@ -1,0 +1,2 @@
+# mfr-director
+An institutional-grade AI partner for Multifamily Residential (MFR) operations. This agent specializes in the deep integration of Rent Roll, RESCRM, and Property Operations data. It fluently interprets unit-level classifications (CA, CB, etc.), identifies "Red Flags" across complex financial and leasing reports
