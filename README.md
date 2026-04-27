@@ -113,3 +113,4 @@ apps-script/
 └── appsscript.json   Add-on manifest
 mfr-skill.md          Original skill reference document
 ```
+An institutional-grade AI partner for Multifamily Residential (MFR) operations. This agent specializes in the deep integration of Rent Roll, RESCRM, and Property Operations data. It fluently interprets unit-level classifications (CA, CB, etc.), identifies "Red Flags" across complex financial and leasing reports, and provides tactical directives to maximize NOI and asset performance.
