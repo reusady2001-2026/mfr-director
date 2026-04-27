@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'IBM Plex Sans', Arial, sans-serif;
+      font-size: 13px;
+      background: #F4F6F9;
+      color: #1A2332;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      background: #0F1C2E;
+      padding: 14px 16px;
+      color: #fff;
+    }
+    .header-title {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+    .header-sub {
+      font-size: 11px;
+      color: #5B7FA6;
+      margin-top: 2px;
+    }
+
+    .body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #5B7FA6;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin: 16px 0 8px;
+    }
+    .section-label:first-child { margin-top: 0; }
+
+    input[type=text] {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1.5px solid #D1D9E6;
+      border-radius: 6px;
+      font-family: 'IBM Plex Sans', Arial, sans-serif;
+      font-size: 13px;
+      color: #1A2332;
+      background: #fff;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    input[type=text]:focus { border-color: #4A9EFF; }
+
+    .sheet-list { display: flex; flex-direction: column; gap: 6px; }
+
+    .sheet-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      background: #fff;
+      border: 1.5px solid #E2E8F0;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .sheet-item:hover { border-color: #4A9EFF; }
+    .sheet-item.selected { border-color: #1E3A5F; background: #EFF6FF; }
+
+    .sheet-check {
+      width: 16px; height: 16px;
+      border: 2px solid #C5D0DF;
+      border-radius: 3px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.15s;
+    }
+    .sheet-item.selected .sheet-check {
+      background: #1E3A5F;
+      border-color: #1E3A5F;
+      color: #fff;
+    }
+    .sheet-name { flex: 1; font-size: 13px; font-weight: 500; }
+
+    .report-type-select {
+      padding: 4px 8px;
+      border: 1px solid #D1D9E6;
+      border-radius: 4px;
+      font-size: 11px;
+      color: #374151;
+      background: #fff;
+      outline: none;
+      display: none;
+    }
+    .sheet-item.selected .report-type-select { display: block; }
+
+    .status-bar {
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      margin-bottom: 12px;
+      display: none;
+    }
+    .status-bar.warning { background: #FAEEDA; color: #854F0B; display: block; }
+    .status-bar.error { background: #FCEBEB; color: #A32D2D; display: block; }
+    .status-bar.success { background: #EAF3DE; color: #3B6D11; display: block; }
+
+    .btn-run {
+      width: 100%;
+      padding: 11px;
+      background: #1E3A5F;
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      font-family: 'IBM Plex Sans', Arial, sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 20px;
+    }
+    .btn-run:hover:not(:disabled) { background: #2A4E7C; }
+    .btn-run:disabled { background: #9AAABB; cursor: not-allowed; }
+
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .footer {
+      padding: 10px 16px;
+      border-top: 1px solid #E2E8F0;
+      font-size: 11px;
+      color: #9AAABB;
+      background: #fff;
+    }
+    .api-status { display: flex; align-items: center; gap: 6px; }
+    .api-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #E53E3E;
+    }
+    .api-dot.ok { background: #38A169; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="header-title">MFR Director</div>
+    <div class="header-sub">Institutional Portfolio Intelligence</div>
+  </div>
+
+  <div class="body">
+    <div id="statusBar" class="status-bar"></div>
+
+    <div class="section-label">Property Info</div>
+    <input type="text" id="city" placeholder="City / Submarket (e.g. Austin, TX)" style="margin-bottom:8px">
+    <input type="text" id="nickname" placeholder="Property Nickname (e.g. Riverside)">
+
+    <div class="section-label">Select Sheets to Analyze</div>
+    <div class="sheet-list" id="sheetList">
+      <div style="color:#9AAABB; font-size:12px; padding:8px 0;">Loading sheets...</div>
+    </div>
+
+    <button class="btn-run" id="runBtn" onclick="runAnalysis()">
+      <span id="btnSpinner" class="spinner"></span>
+      <span id="btnText">⚡ Run Full Analysis</span>
+    </button>
+  </div>
+
+  <div class="footer">
+    <div class="api-status">
+      <div class="api-dot" id="apiDot"></div>
+      <span id="apiStatusText">Checking API key...</span>
+    </div>
+  </div>
+
+  <script>
+    var selectedSheets = {};
+
+    // Load sheet names on open
+    google.script.run
+      .withSuccessHandler(function(names) {
+        var list = document.getElementById('sheetList');
+        if (!names || !names.length) {
+          list.innerHTML = '<div style="color:#9AAABB;font-size:12px;padding:8px 0">No sheets found.</div>';
+          return;
+        }
+        list.innerHTML = names.map(function(name) {
+          return '<div class="sheet-item" id="item-' + encodeId(name) + '" onclick="toggleSheet(this, \'' + escJs(name) + '\')">' +
+            '<div class="sheet-check" id="check-' + encodeId(name) + '">✓</div>' +
+            '<span class="sheet-name">' + escHtml(name) + '</span>' +
+            '<select class="report-type-select" id="type-' + encodeId(name) + '" onclick="event.stopPropagation()">' +
+              '<option value="">Auto-detect</option>' +
+              '<option value="Rent Roll">Rent Roll</option>' +
+              '<option value="GPR">Gross Potential Rent (GPR)</option>' +
+              '<option value="Aged Receivables">Aged Receivables</option>' +
+              '<option value="Traffic">Traffic / CRM</option>' +
+              '<option value="Box Score">Box Score</option>' +
+              '<option value="Lease Expirations">Lease Expirations</option>' +
+              '<option value="Resident Activity">Resident Activity</option>' +
+              '<option value="Unit Availability">Unit Availability / Vacancy</option>' +
+              '<option value="Market Rent Schedule">Market Rent Schedule</option>' +
+              '<option value="Security Deposit">Security Deposit</option>' +
+              '<option value="Conversion Ratios">Conversion Ratios</option>' +
+              '<option value="Agent Audit">Agent Audit / Team</option>' +
+            '</select>' +
+          '</div>';
+        }).join('');
+      })
+      .withFailureHandler(showError)
+      .getSheetNames();
+
+    // Check API key status
+    google.script.run
+      .withSuccessHandler(function(status) {
+        var dot = document.getElementById('apiDot');
+        var txt = document.getElementById('apiStatusText');
+        if (status === 'configured') {
+          dot.className = 'api-dot ok';
+          txt.textContent = 'API key configured';
+        } else {
+          dot.className = 'api-dot';
+          txt.textContent = 'API key missing — open Settings';
+          showStatus('warning', 'API key not set. Click ⚙️ Settings in the menu to add your Anthropic key.');
+        }
+      })
+      .withFailureHandler(function() {})
+      .getApiKeyStatus();
+
+    function toggleSheet(el, name) {
+      var id = encodeId(name);
+      if (selectedSheets[name]) {
+        delete selectedSheets[name];
+        el.classList.remove('selected');
+      } else {
+        selectedSheets[name] = true;
+        el.classList.add('selected');
+      }
+    }
+
+    function runAnalysis() {
+      var city = document.getElementById('city').value.trim();
+      var nickname = document.getElementById('nickname').value.trim();
+      var sheets = Object.keys(selectedSheets);
+
+      if (!city) return showStatus('error', 'Please enter a city / submarket.');
+      if (!nickname) return showStatus('error', 'Please enter a property nickname.');
+      if (!sheets.length) return showStatus('error', 'Select at least one sheet to analyze.');
+
+      var config = {
+        city: city,
+        nickname: nickname,
+        sheets: sheets.map(function(name) {
+          var id = encodeId(name);
+          var typeEl = document.getElementById('type-' + id);
+          return { name: name, reportType: typeEl ? typeEl.value : '' };
+        })
+      };
+
+      setLoading(true);
+      showStatus('', '');
+
+      google.script.run
+        .withSuccessHandler(function(result) {
+          setLoading(false);
+          if (result.html) {
+            showDashboard(result.html, nickname, result.resultsSheetName);
+          } else if (result.rawResponse) {
+            showRawResponse(result.rawResponse);
+          } else {
+            showStatus('error', 'No dashboard returned. Check your data and try again.');
+          }
+        })
+        .withFailureHandler(function(err) {
+          setLoading(false);
+          showStatus('error', err.message || String(err));
+        })
+        .runAnalysis(config);
+    }
+
+    function showDashboard(html, nickname, resultsSheetName) {
+      var modal = document.createElement('div');
+      modal.style.cssText = 'position:fixed;inset:0;background:#0F1C2Ecc;z-index:999;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto';
+
+      var box = document.createElement('div');
+      box.style.cssText = 'background:#fff;border-radius:12px;width:100%;max-width:1200px;overflow:hidden;';
+
+      var toolbar = document.createElement('div');
+      toolbar.style.cssText = 'background:#0F1C2E;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;';
+      toolbar.innerHTML =
+        '<span style="color:#fff;font-weight:600;font-size:14px;">' + escHtml(nickname) + ' — MFR Analysis</span>' +
+        '<div style="display:flex;gap:10px">' +
+        (resultsSheetName ? '<button onclick="activateSheet(\'' + escJs(resultsSheetName) + '\')" style="background:#1E3A5F;color:#fff;border:none;padding:6px 14px;border-radius:5px;cursor:pointer;font-size:12px">View Summary Sheet</button>' : '') +
+        '<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="background:#A32D2D;color:#fff;border:none;padding:6px 14px;border-radius:5px;cursor:pointer;font-size:12px">✕ Close</button>' +
+        '</div>';
+
+      var iframe = document.createElement('iframe');
+      iframe.style.cssText = 'width:100%;height:85vh;border:none;';
+      iframe.srcdoc = html;
+
+      box.appendChild(toolbar);
+      box.appendChild(iframe);
+      modal.appendChild(box);
+      document.body.appendChild(modal);
+    }
+
+    function showRawResponse(text) {
+      google.script.run.showRawResponseDialog(text);
+    }
+
+    function activateSheet(name) {
+      google.script.run.activateSummarySheet(name);
+    }
+
+    function setLoading(on) {
+      var btn = document.getElementById('runBtn');
+      var spinner = document.getElementById('btnSpinner');
+      var txt = document.getElementById('btnText');
+      btn.disabled = on;
+      spinner.style.display = on ? 'block' : 'none';
+      txt.textContent = on ? 'Analyzing...' : '⚡ Run Full Analysis';
+    }
+
+    function showStatus(type, msg) {
+      var bar = document.getElementById('statusBar');
+      bar.className = 'status-bar ' + type;
+      bar.textContent = msg;
+      bar.style.display = msg ? 'block' : 'none';
+    }
+
+    function showError(err) {
+      showStatus('error', err.message || String(err));
+    }
+
+    function encodeId(s) { return s.replace(/[^a-zA-Z0-9]/g, '_'); }
+    function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function escJs(s) { return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+  </script>
+</body>
+</html>
