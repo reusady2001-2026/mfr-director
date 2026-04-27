@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MFR Director</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════ LOGIN VIEW -->
+<div id="loginView" class="view {% if email %}hidden{% endif %}">
+  <div class="login-page">
+    <div class="login-card">
+      <div class="login-logo">
+        <span class="logo-mark">MFR</span>
+        <span class="logo-sep">|</span>
+        <span class="logo-text">Director</span>
+      </div>
+      <p class="login-tagline">Institutional-Grade Multifamily Portfolio Intelligence</p>
+
+      <!-- Step 1: Email -->
+      <div id="stepEmail">
+        <label class="field-label">Subscriber Email</label>
+        <input type="email" id="loginEmail" class="field-input" placeholder="you@company.com" autocomplete="email">
+        <button class="btn-primary full" id="sendCodeBtn" onclick="requestCode()">Send Login Code</button>
+        <div id="emailError" class="field-error"></div>
+      </div>
+
+      <!-- Step 2: Code -->
+      <div id="stepCode" class="hidden">
+        <div class="sent-notice">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B6D11" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.63 19.79 19.79 0 01.1 2.18 2 2 0 012.06 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 7.91A16 16 0 0014.73 16.55l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+          Code sent — check your inbox
+        </div>
+        <label class="field-label">Enter your 8-character code</label>
+        <input type="text" id="loginCode" class="field-input code-input" placeholder="XXXXXXXX"
+               maxlength="8" autocomplete="one-time-code" oninput="this.value=this.value.toUpperCase()">
+        <button class="btn-primary full" id="verifyBtn" onclick="verifyCode()">Access Dashboard</button>
+        <button class="btn-ghost" onclick="backToEmail()">← Use different email</button>
+        <div id="codeError" class="field-error"></div>
+      </div>
+
+      <div class="login-footer">
+        Access is available to active subscribers only.
+        <br>Codes rotate monthly with your subscription.
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════ APP VIEW -->
+<div id="appView" class="view {% if not email %}hidden{% endif %}">
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="header-logo">
+        <span class="logo-mark">MFR</span>
+        <span class="logo-sep">|</span>
+        <span class="logo-text">Director</span>
+      </div>
+      <div class="header-right">
+        <span class="header-email" id="headerEmail">{{ email or '' }}</span>
+        <button class="btn-ghost small" onclick="logout()">Sign Out</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main content -->
+  <main class="app-main">
+
+    <!-- ── Upload panel ── -->
+    <section id="uploadPanel" class="panel">
+      <div class="panel-header">
+        <h1 class="panel-title">New Portfolio Analysis</h1>
+        <p class="panel-sub">Upload MFR reports from any system — Yardi, Entrata, RealPage, or your own spreadsheets.</p>
+      </div>
+
+      <form id="uploadForm">
+        <div class="form-row two-col">
+          <div class="field">
+            <label class="field-label">City / Submarket</label>
+            <input type="text" id="city" name="city" class="field-input" placeholder="e.g. Austin, TX – South Congress" required>
+          </div>
+          <div class="field">
+            <label class="field-label">Property Nickname</label>
+            <input type="text" id="nickname" name="nickname" class="field-input" placeholder="e.g. Riverside, Property C" required>
+          </div>
+        </div>
+
+        <div class="drop-zone" id="dropZone">
+          <div class="drop-icon">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </div>
+          <div class="drop-text">Drop report files here</div>
+          <div class="drop-sub">CSV, XLSX, XLS · Rent Roll · GPR · AR Aging · Traffic · Box Score · and more</div>
+          <label for="fileInput" class="btn-secondary">Browse Files</label>
+          <input type="file" id="fileInput" multiple accept=".csv,.xlsx,.xls,.txt" style="display:none">
+        </div>
+
+        <div id="fileList"></div>
+
+        <button type="submit" class="btn-primary full large" id="analyzeBtn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          Run Full Analysis
+        </button>
+      </form>
+    </section>
+
+    <!-- ── Loading panel ── -->
+    <section id="loadingPanel" class="panel hidden">
+      <div class="loading-center">
+        <div class="loading-pulse">
+          <div class="pulse-ring"></div>
+          <div class="pulse-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4A9EFF" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          </div>
+        </div>
+        <h2 class="loading-title">Analyzing Portfolio</h2>
+        <p class="loading-status" id="loadingStatus">Parsing report files…</p>
+        <div class="loading-steps">
+          <div class="lstep active" id="ls1"><span class="lstep-dot"></span>Parse Files</div>
+          <div class="lstep" id="ls2"><span class="lstep-dot"></span>Market Data</div>
+          <div class="lstep" id="ls3"><span class="lstep-dot"></span>Build Dashboard</div>
+          <div class="lstep" id="ls4"><span class="lstep-dot"></span>Generate Exports</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Results panel ── -->
+    <section id="resultsPanel" class="panel hidden">
+      <div class="results-bar">
+        <div>
+          <h2 class="results-title" id="resultsTitle">Analysis Complete</h2>
+          <p class="results-meta" id="resultsMeta"></p>
+        </div>
+        <div class="results-actions">
+          <button class="btn-secondary" id="excelBtn" onclick="downloadExcel()" style="display:none">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download Excel
+          </button>
+          <button class="btn-secondary" id="sheetsBtn" onclick="openSheetsModal()" style="display:none">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Export to Google Sheets
+          </button>
+          <button class="btn-secondary" onclick="newAnalysis()">New Analysis</button>
+        </div>
+      </div>
+
+      <div class="dashboard-container" id="dashboardContainer">
+        <iframe id="dashboardFrame" class="dashboard-frame" frameborder="0" scrolling="auto"></iframe>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════ GOOGLE SHEETS MODAL -->
+<div id="sheetsModal" class="modal-backdrop hidden">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3>Export to Google Sheets</h3>
+      <button class="modal-close" onclick="closeSheetsModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-desc">A new Google Sheet will be created and shared with the email you enter below.</p>
+      <label class="field-label">Share with Google Account</label>
+      <input type="email" id="sheetsEmail" class="field-input" placeholder="your-google-account@gmail.com">
+      <div id="sheetsError" class="field-error"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeSheetsModal()">Cancel</button>
+      <button class="btn-primary" id="sheetsConfirmBtn" onclick="exportToSheets()">
+        Create & Share Sheet
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<script src="/static/app.js"></script>
+{% if email %}
+<script>
+  // Already logged in — show app view
+  document.getElementById('headerEmail').textContent = '{{ email }}';
+</script>
+{% endif %}
+
+</body>
+</html>
